@@ -1,6 +1,8 @@
 import argparse
 import os
 import shutil
+import hashlib
+import time
 
 class Synchronizer:
     """
@@ -13,15 +15,19 @@ class Synchronizer:
         self.replica = replica
         self.logfile = logfile
         self.algorithm = algorithm
+
+    def get_checksum(self, filepath):
+        """ Calculates a checksum of a file using the specified algorithm."""
+        with open(filepath, 'rb') as f:
+            data = f.read()
+            return getattr(hashlib, self.algorithm)(data).hexdigest()
     
     def sync(self):
         # TODO's:
-        # Check if is the replica file up to date / different. And update if needed.
         # Implement logging
 
-
         for root, dirs, files in os.walk(self.source):
-            """ Updates folder structure in replica based on source """
+            """ Updates folder structure in replica based on source. """
             replica_dir = os.path.join(self.replica, os.path.relpath(root, self.source))
             os.makedirs(replica_dir, exist_ok=True)
 
@@ -29,8 +35,17 @@ class Synchronizer:
                 source_file = os.path.join(root, file)
                 replica_file = os.path.join(replica_dir, file)
 
+                # Copy source files which are not in replica
                 if not os.path.exists(replica_file):
                     shutil.copy(source_file, replica_file)
+                
+                else:
+                    # Check if files need update based on checksum
+                    source_checksum = self.get_checksum(source_file)
+                    replica_checksum = self.get_checksum(replica_file)
+                    if source_checksum != replica_checksum:
+                        os.remove(replica_file)
+                        shutil.copy(source_file, replica_file)
 
                 if not os.path.exists(source_file):
                     os.remove(replica_file)
@@ -48,10 +63,8 @@ def main():
     sync = Synchronizer(args.source, args.replica, args.logfile, args.algorithm)
 
     while True:
-        # TODO's:
-        # Add implicit wait.
-
         sync.sync()
+        time.sleep(args.interval)
 
 if __name__ == "__main__":
     main()
