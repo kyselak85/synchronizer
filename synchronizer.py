@@ -25,11 +25,29 @@ class Synchronizer:
     def sync(self):
         # TODO's:
         # Implement logging
+        """
+        for root, dirs, files in os.walk(self.source):  # Ensure top-down traversal
+           replica_dir = os.path.join(self.replica, os.path.relpath(root, self.source))
+           for file in os.listdir(replica_dir):
+                replica_file = os.path.join(replica_dir, file)
+
+                # Delete any files that are in the destination but not in the source
+                if os.path.isfile(replica_file) and file not in files:
+                    os.remove(replica_file)
+"""
+
 
         for root, dirs, files in os.walk(self.source):
             """ Updates folder structure in replica based on source. """
             replica_dir = os.path.join(self.replica, os.path.relpath(root, self.source))
             os.makedirs(replica_dir, exist_ok=True)
+
+            for file in os.listdir(replica_dir):
+                replica_file = os.path.join(replica_dir, file)
+
+                # Delete files which are in the replica but not in the source
+                if os.path.isfile(replica_file) and file not in files:
+                    os.remove(replica_file)
 
             for file in files:
                 source_file = os.path.join(root, file)
@@ -46,9 +64,6 @@ class Synchronizer:
                     if source_checksum != replica_checksum:
                         os.remove(replica_file)
                         shutil.copy(source_file, replica_file)
-
-                if not os.path.exists(source_file):
-                    os.remove(replica_file)
 
 def main():
 
