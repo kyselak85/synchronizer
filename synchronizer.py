@@ -100,17 +100,22 @@ class Synchronizer:
             4. Updates the replica if the source file has changed.
         """
         logging.info(f"Synchronization started")
+        try:
+            for root, dirs, files in os.walk(self.source):
+                    replica_dir = os.path.join(self.replica, os.path.relpath(root, self.source))
+                    self.create_replica_folder(root, replica_dir)
+                    self.delete_extra_replica_items(replica_dir, items=dirs + files)
+                    self.copy_missing_files(root, replica_dir, files)
+                    # Update modified files
+                    for file in files:
+                        source_file = os.path.join(root, file)
+                        replica_file = os.path.join(replica_dir, file)
+                        self.update_changed_files(source_file, replica_file)
 
-        for root, dirs, files in os.walk(self.source):
-            replica_dir = os.path.join(self.replica, os.path.relpath(root, self.source))
-            self.create_replica_folder(root, replica_dir)
-            self.delete_extra_replica_items(replica_dir, items=dirs + files)
-            self.copy_missing_files(root, replica_dir, files)
-            # Update modified files
-            for file in files:
-                source_file = os.path.join(root, file)
-                replica_file = os.path.join(replica_dir, file)
-                self.update_changed_files(source_file, replica_file)
+            logging.info(f"Synchronization completed. Sleeping for {self.interval} seconds.")
+
+        except Exception as e:
+                logging.error(f"Synchronization failed: {e}")
 
 
 def main():
